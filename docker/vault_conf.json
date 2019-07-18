@@ -1,0 +1,20 @@
+{
+  "backend": {
+    "s3": {
+       "access_key": "abcd1234"
+      ,"secret_key": "defg5678"
+      ,"bucket"    : "my-bucket"
+      ,"endpoint"  : "http://fake-s3:4569"
+    }
+  },
+  "listener": {
+    "tcp": {
+      "address": "0.0.0.0:8200",
+      "tls_disable": 1
+    }
+  },
+  "ui": false,
+  "default_lease_ttl": "168h",
+  "max_lease_ttl": "720h"
+
+}

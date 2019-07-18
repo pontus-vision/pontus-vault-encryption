@@ -1,0 +1,64 @@
+version: '3'
+services:
+
+  pontus-vault.pontusvision.com:
+    image: "vault"
+    domainname: pontusvision.com
+    ports:
+      - "8200:8200"
+    depends_on:
+      - fake-s3.pontusvision.com
+
+
+    restart: on-failure
+    privileged: true
+    hostname: pontus-vault
+    cap_add:
+      - IPC_LOCK
+    entrypoint: vault server  -config=/vault/conf.json
+
+    volumes:
+      - pki_vol:/etc/pki
+      - /tmp/vault_vol:/vault/file
+      - ./vault_conf.json:/vault/conf.json
+
+
+  fake-s3.pontusvision.com:
+    image: "lphoward/fake-s3"
+    domainname: pontusvision.com
+    ports:
+      - "4569:4569"
+
+
+  vault-client.pontusvision.com:
+    image: "maven:3.6-jdk-8-alpine"
+    domainname: pontusvision.com
+    depends_on:
+      - pontus-vault.pontusvision.com
+
+    volumes:
+      - ..:/sut
+      - ~/.m2:/root/.m2
+      - pki_vol:/etc/pki
+
+    ports:
+      - "5010:5010"
+
+    working_dir: /sut
+
+    command: >
+      /bin/bash -c "
+        echo Waiting for ad service start...;
+        while ! nc -z pontus-vault.pontusvision.com 8200;
+        do
+          sleep 1;
+        done;
+        echo Connected!;
+        # mvn -Dtest=PontusGetActiveDirectoryTest -Djavax.net.ssl.keyStorePassword=pa55word -Djavax.net.ssl.keyStore=/etc/pki/java/keystore.jks -Djavax.net.ssl.trustStore=/etc/pki/java/truststore.jks -Dmaven.surefire.debug='-Xdebug -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5010 -Xnoagent -Djava.compiler=NONE' -DforkCount=0 test
+      "
+volumes:
+  pki_vol:
+
+
+
+
